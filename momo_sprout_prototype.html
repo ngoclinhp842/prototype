@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MoMo Sprout – Prototype</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:16px 0 32px;}
+h1.page-title{color:#fff;font-size:14px;opacity:.5;margin-bottom:10px;letter-spacing:1px;text-transform:uppercase;}
+
+/* ── NAV PILLS ── */
+.nav-pills{display:flex;gap:6px;justify-content:center;margin-bottom:12px;flex-wrap:wrap;}
+.np{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid #E0366F;color:#E0366F;background:rgba(255,255,255,.05);cursor:pointer;transition:all .15s;}
+.np.active{background:#E0366F;color:#fff;}
+
+/* ── PHONE FRAME ── */
+.phone{width:340px;background:#fff;border-radius:36px;border:8px solid #111;overflow:hidden;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px #333;}
+.screen{display:none;flex-direction:column;min-height:600px;}
+.screen.active{display:flex;}
+
+/* ── STATUS BAR ── */
+.sbar{background:#E0366F;padding:10px 16px 9px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.sbar-t{color:#fff;font-size:13px;font-weight:700;}
+.sbar-ico{color:#fff;font-size:20px;cursor:pointer;background:none;border:none;line-height:1;}
+
+/* ── TOAST ── */
+.toast{position:absolute;top:12px;left:50%;transform:translateX(-50%) translateY(-70px);background:#1a1a2e;color:#fff;border-radius:20px;padding:8px 18px;font-size:12px;font-weight:600;white-space:nowrap;transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:100;pointer-events:none;border:1px solid rgba(255,255,255,.1);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── XP ROW ── */
+.xp-row{background:rgba(255,255,255,.95);margin:7px 10px 0;border-radius:12px;padding:6px 10px;display:flex;gap:10px;flex-shrink:0;}
+.xp-item{flex:1;}
+.xp-label{font-size:9px;color:#555;display:flex;justify-content:space-between;font-weight:600;}
+.xp-track{height:7px;background:#eee;border-radius:4px;margin-top:3px;overflow:hidden;}
+.xp-fill{height:100%;border-radius:4px;transition:width .4s;}
+
+/* ══ SKY WORLD ══ */
+.sky-world{flex:1;background:linear-gradient(180deg,#5BB8F5 0%,#8ECEF5 45%,#A8D8A8 45%,#5A9A5A 100%);position:relative;display:flex;flex-direction:column;overflow:hidden;}
+.cloud{position:absolute;background:#fff;border-radius:40px;opacity:.9;}
+.sun-el{position:absolute;top:14px;right:18px;width:38px;height:38px;background:#FFD700;border-radius:50%;box-shadow:0 0 18px rgba(255,215,0,.5);}
+
+/* top icon row */
+.icon-row{display:flex;justify-content:space-around;padding:6px 14px 2px;flex-shrink:0;}
+.gic{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.gic .ic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2.5px solid rgba(255,255,255,.7);position:relative;transition:transform .1s;}
+.gic .ic:active{transform:scale(.9);}
+.gic .ic .bd{position:absolute;top:-5px;right:-5px;background:#ff3b30;color:#fff;font-size:8px;font-weight:700;border-radius:10px;padding:1px 5px;}
+.gic span{font-size:9px;color:#fff;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+
+/* ══ PIG CHARACTER ══ */
+.pig-stage{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center;position:relative;padding:0 0 8px;}
+
+/* speech bubble */
+.bubble{background:#fff;border:2.5px solid #E0366F;border-radius:18px;padding:7px 14px;font-size:12px;color:#B52459;font-weight:700;margin-bottom:6px;position:relative;text-align:center;max-width:220px;line-height:1.4;transition:opacity .2s;box-shadow:0 2px 8px rgba(224,54,111,.15);}
+.bubble::after{content:'';position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#E0366F;}
+.bubble::before{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#fff;z-index:1;}
+
+/* pig SVG wrapper */
+.pig-wrap{position:relative;cursor:pointer;user-select:none;}
+.pig-wrap:active .pig-body{transform:scale(.93);}
+.pig-body{transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+
+/* emotion overlays */
+.hearts{position:absolute;top:-10px;right:-10px;font-size:16px;opacity:0;pointer-events:none;animation:none;}
+.hearts.pop{animation:heartPop .8s forwards;}
+.stars{position:absolute;top:-8px;left:-12px;font-size:14px;opacity:0;pointer-events:none;}
+.stars.pop{animation:starPop .7s forwards;}
+
+@keyframes pigBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pigWiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes heartPop{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-20px) scale(1.2)}100%{opacity:0;transform:translateY(-35px) scale(.8)}}
+@keyframes starPop{0%{opacity:0;transform:scale(.5)}40%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(.6) translateY(-20px)}}
+@keyframes pigEat{0%,100%{transform:translateY(0)}30%{transform:translateY(3px) scaleY(.95)}60%{transform:translateY(-4px)}}
+@keyframes pigHappy{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-5deg) scale(1.05)}75%{transform:rotate(5deg) scale(1.05)}}
+@keyframes pigSad{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+.pig-bounce{animation:pigBounce 2s ease-in-out infinite;}
+.pig-wiggle{animation:pigWiggle .4s ease-in-out;}
+.pig-eat{animation:pigEat .5s ease-in-out;}
+.pig-happy{animation:pigHappy .6s ease-in-out 3;}
+
+/* ══ BOTTOM ICONS ══ */
+.bot-icons{display:flex;justify-content:space-around;padding:4px 14px 6px;flex-shrink:0;}
+
+/* feed button */
+.feed-btn{display:block;margin:0 auto 4px;background:#E0366F;color:#fff;border:none;border-radius:22px;padding:10px 40px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #B52459;transition:all .1s;flex-shrink:0;}
+.feed-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #B52459;}
+
+/* streak */
+.streak-bar{background:linear-gradient(90deg,#FF6B35,#FFB347);margin:4px 10px;border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;}
+.streak-bar span{font-size:11px;color:#fff;font-weight:700;flex:1;}
+.streak-n{background:rgba(255,255,255,.25);border-radius:8px;padding:2px 9px;font-size:14px;font-weight:800;color:#fff;}
+
+/* bottom nav */
+.bot-nav{background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-around;padding:8px 0 12px;flex-shrink:0;}
+.bn{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-size:9px;color:#aaa;font-weight:600;}
+.bn.on{color:#E0366F;}
+.bn .bni{font-size:22px;}
+
+/* ══ TASKS SCREEN ══ */
+.task-bg{background:#F5F5FA;flex:1;overflow-y:auto;}
+.persona-strip{background:linear-gradient(135deg,#FCE8F0,#FFF0F5);border-bottom:1.5px solid #F4C0D1;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.persona-ico{font-size:28px;}
+.persona-name{font-size:13px;font-weight:700;color:#B52459;}
+.persona-sub{font-size:10px;color:#888;margin-top:1px;}
+.change-btn{margin-left:auto;background:#fff;border:1.5px solid #E0366F;border-radius:12px;padding:4px 10px;font-size:10px;color:#E0366F;font-weight:700;cursor:pointer;}
+
+.prog-wrap{padding:8px 14px 4px;background:#fff;border-bottom:1px solid #eee;}
+.prog-label{display:flex;justify-content:space-between;font-size:10px;color:#888;margin-bottom:4px;font-weight:600;}
+.prog-track{height:9px;background:#eee;border-radius:5px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#E0366F,#F59E0B);border-radius:5px;transition:width .5s cubic-bezier(.34,1.56,.64,1);}
+
+.sec-head{padding:10px 14px 4px;font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;}
+
+.task-card{margin:0 10px 9px;background:#fff;border-radius:16px;border:1.5px solid #E8E8EE;overflow:hidden;transition:all .3s;}
+.task-card.done{border-color:#10B981;background:#F0FDF9;}
+.task-card.skipped{opacity:.45;}
+.task-head{padding:11px 12px 0;display:flex;align-items:flex-start;gap:10px;}
+.task-ico{font-size:26px;min-width:34px;text-align:center;margin-top:1px;}
+.task-content{flex:1;}
+.task-title{font-size:12px;font-weight:700;color:#1a1a2e;}
+.task-desc{font-size:10.5px;color:#666;margin-top:3px;line-height:1.45;}
+.task-pills{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
+.pill-gold{background:#FFF7E6;border:1px solid #F59E0B;border-radius:10px;padding:2px 8px;font-size:9px;font-weight:700;color:#B45309;}
+.pill-xp{background:#EAF3DE;border:1px solid #639922;border-radius:10px;padding:2px 8px;font-size:9px;font-weight:700;color:#3B6D11;}
+.task-foot{padding:8px 12px 11px;display:flex;gap:7px;}
+.btn-main{flex:1;background:#E0366F;color:#fff;border:none;border-radius:20px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;transition:all .1s;}
+.btn-main:active{opacity:.85;transform:scale(.97);}
+.btn-skip{background:#fff;border:1.5px solid #ddd;border-radius:20px;padding:9px 12px;font-size:11px;color:#888;cursor:pointer;}
+.done-row{padding:9px 12px 11px;display:flex;align-items:center;gap:7px;}
+.done-row span{font-size:11px;color:#059669;font-weight:700;}
+
+.all-done-banner{margin:6px 10px 10px;background:linear-gradient(135deg,#FCE8F0,#FFF0F5);border:1.5px solid #F4C0D1;border-radius:14px;padding:12px;text-align:center;display:none;}
+.all-done-banner .adb-ico{font-size:28px;margin-bottom:4px;}
+.all-done-banner .adb-t{font-size:13px;font-weight:700;color:#B52459;}
+.all-done-banner .adb-s{font-size:10px;color:#888;margin-top:2px;}
+
+/* ══ QUIZ SCREEN ══ */
+.quiz-bg{background:linear-gradient(180deg,#1A1A2E 0%,#2D2D44 100%);flex:1;padding:14px;display:flex;flex-direction:column;gap:12px;}
+.q-top{display:flex;align-items:center;gap:10px;}
+.q-pig{font-size:30px;}
+.q-info{flex:1;}
+.q-title{color:#fff;font-size:14px;font-weight:700;}
+.q-prog-track{height:6px;background:rgba(255,255,255,.15);border-radius:3px;margin-top:4px;overflow:hidden;}
+.q-prog-fill{height:100%;background:#E0366F;border-radius:3px;transition:width .4s;}
+.q-card{background:#fff;border-radius:14px;padding:14px;}
+.q-lbl{font-size:9px;font-weight:700;color:#E0366F;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.q-text{font-size:13px;color:#1a1a2e;font-weight:600;line-height:1.5;}
+.q-opts{display:flex;flex-direction:column;gap:8px;}
+.q-opt{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:12px;padding:11px 14px;font-size:12px;color:#fff;cursor:pointer;transition:all .15s;line-height:1.4;}
+.q-opt:active{transform:scale(.98);}
+.q-opt.correct{background:#10B981;border-color:#10B981;font-weight:700;}
+.q-opt.wrong{background:#991B1B;border-color:#991B1B;}
+.q-reward{background:rgba(16,185,129,.15);border:1.5px solid #10B981;border-radius:12px;padding:11px 14px;display:none;align-items:center;gap:10px;}
+.q-reward span{font-size:12px;color:#10B981;font-weight:600;}
+.q-next{display:none;background:#E0366F;color:#fff;border:none;border-radius:22px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #B52459;}
+.q-next:active{transform:translateY(2px);box-shadow:0 1px 0 #B52459;}
+
+.green-act-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:14px;padding:11px 13px;cursor:pointer;transition:all .15s;}
+.green-act-card:active{transform:scale(.97);}
+.green-act-card.done{opacity:.5;pointer-events:none;border-color:#52B788;background:rgba(82,183,136,.15);}
+
+.ms-bg{background:linear-gradient(180deg,#1a1a2e,#2D2D44);flex:1;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow-y:auto;}
+.ms-confetti{font-size:30px;letter-spacing:8px;text-align:center;}
+.ms-title{font-size:20px;font-weight:800;color:#FFD700;text-align:center;}
+.ms-pig{font-size:76px;text-align:center;line-height:1;}
+.ms-rewards{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:16px;padding:14px;width:100%;}
+.ms-r-head{font-size:10px;font-weight:700;color:rgba(255,255,255,.45);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;}
+.ms-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);}
+.ms-row:last-child{border:none;}
+.ms-row-ico{font-size:20px;width:32px;text-align:center;}
+.ms-row-txt{font-size:12px;color:#fff;flex:1;}
+.ms-row-val{font-size:13px;font-weight:700;color:#FFD700;}
+.ms-charity{background:rgba(16,185,129,.15);border:1.5px solid #10B981;border-radius:12px;padding:11px 14px;width:100%;text-align:center;font-size:11px;color:#10B981;font-weight:600;line-height:1.5;}
+.ms-share{background:#E0366F;color:#fff;border:none;border-radius:22px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;width:100%;box-shadow:0 3px 0 #B52459;}
+.ms-share:active{transform:translateY(2px);}
+
+.caption{color:rgba(255,255,255,.3);font-size:11px;text-align:center;margin-top:10px;}
+</style>
+</head>
+<body>
+
+<h1 class="page-title">MoMo Sprout — Prototype</h1>
+
+<div class="nav-pills">
+  <div class="np active" onclick="show('main')">🏠 Trang chính</div>
+  <div class="np" onclick="show('tasks')">📋 Nhiệm vụ</div>
+  <div class="np" onclick="show('green')">🌿 Cây Xanh</div>
+  <div class="np" onclick="show('community')">👥 Cộng Đồng</div>
+  <div class="np" onclick="show('milestone')">🎉 Milestone</div>
+</div>
+
+<div class="phone" id="phone">
+<div id="toast" class="toast"></div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="screen active" id="s-main">
+  <div class="sbar">
+    <span class="sbar-t">Heo Đất · MoMo Sprout</span>
+    <div style="display:flex;gap:14px">
+      <button class="sbar-ico" aria-label="Thông báo">🔔</button>
+      <button class="sbar-ico" aria-label="Trang chủ">🏠</button>
+    </div>
+  </div>
+
+  <div class="xp-row">
+    <div class="xp-item">
+      <div class="xp-label"><span>🌿 Cấp 3</span><span id="xp-lbl">24/50</span></div>
+      <div class="xp-track"><div class="xp-fill" id="xp-bar" style="width:48%;background:#10B981;"></div></div>
+    </div>
+    <div class="xp-item">
+      <div class="xp-label"><span>🪙 Heo Vàng</span><span id="gold-lbl">1,240</span></div>
+      <div class="xp-track"><div class="xp-fill" id="gold-bar" style="width:50%;background:#F59E0B;"></div></div>
+    </div>
+  </div>
+
+  <div class="sky-world">
+    <!-- clouds -->
+    <div class="cloud" style="width:68px;height:22px;top:16px;left:14px;"></div>
+    <div class="cloud" style="width:46px;height:15px;top:28px;left:62px;"></div>
+    <div class="cloud" style="width:52px;height:17px;top:14px;right:62px;"></div>
+    <div class="sun-el"></div>
+
+    <!-- top icons -->
+    <div class="icon-row">
+      <div class="gic" onclick="show('quiz')">
+        <div class="ic" style="background:#B52459;">📝</div>
+        <span>Quiz</span>
+      </div>
+      <div class="gic">
+        <div class="ic" style="background:#1D9E75;">🏆</div>
+        <span>Xếp hạng</span>
+      </div>
+      <div class="gic" onclick="show('milestone')">
+        <div class="ic" style="background:#F59E0B;">⭐</div>
+        <span>Milestone</span>
+      </div>
+      <div class="gic">
+        <div class="ic" style="background:#6366F1;">👥</div>
+        <span>Bạn bè</span>
+      </div>
+    </div>
+
+    <!-- PIG CHARACTER -->
+    <div class="pig-stage">
+      <div class="bubble" id="bubble">Mình đói quá! Cho mình ăn với 🥺</div>
+
+      <div class="pig-wrap pig-bounce" id="pig-wrap" onclick="tapPig(event)">
+        <div class="hearts" id="hearts">❤️</div>
+        <div class="stars" id="stars">✨</div>
+
+        <!-- TALKING TOM-INSPIRED PIG: expressive eyes, big head, reactive face -->
+        <svg id="pig-body" class="pig-body" width="140" height="145" viewBox="0 0 140 145" xmlns="http://www.w3.org/2000/svg">
+          <!-- shadow -->
+          <ellipse cx="70" cy="138" rx="38" ry="7" fill="rgba(0,0,0,.12)"/>
+          <!-- body -->
+          <ellipse cx="70" cy="105" rx="40" ry="35" fill="#F4A0B5"/>
+          <!-- neck -->
+          <ellipse cx="70" cy="80" rx="22" ry="12" fill="#F4A0B5"/>
+          <!-- HEAD - big for expressiveness like Talking Tom -->
+          <circle cx="70" cy="55" r="40" fill="#F9B8C9"/>
+          <!-- ear L -->
+          <ellipse cx="35" cy="26" rx="13" ry="17" fill="#F9B8C9"/>
+          <ellipse cx="35" cy="27" rx="8" ry="12" fill="#F08080"/>
+          <!-- ear R -->
+          <ellipse cx="105" cy="26" rx="13" ry="17" fill="#F9B8C9"/>
+          <ellipse cx="105" cy="27" rx="8" ry="12" fill="#F08080"/>
+
+          <!-- cheeks -->
+          <ellipse cx="42" cy="65" rx="12" ry="9" fill="#FFA0B0" opacity=".5"/>
+          <ellipse cx="98" cy="65" rx="12" ry="9" fill="#FFA0B0" opacity=".5"/>
+
+          <!-- EYES - large, expressive like Talking Tom -->
+          <!-- eye whites L -->
+          <ellipse cx="52" cy="48" rx="13" ry="14" fill="#fff"/>
+          <!-- eye whites R -->
+          <ellipse cx="88" cy="48" rx="13" ry="14" fill="#fff"/>
+          <!-- iris L -->
+          <circle cx="54" cy="49" r="8" fill="#3D2B1F" id="irisL"/>
+          <!-- iris R -->
+          <circle cx="90" cy="49" r="8" fill="#3D2B1F" id="irisR"/>
+          <!-- pupil L -->
+          <circle cx="55" cy="50" r="4.5" fill="#1a1a1a" id="pupilL"/>
+          <!-- pupil R -->
+          <circle cx="91" cy="50" r="4.5" fill="#1a1a1a" id="pupilR"/>
+          <!-- shine L -->
+          <circle cx="57" cy="46" r="2.5" fill="#fff"/>
+          <circle cx="53" cy="48" r="1.2" fill="rgba(255,255,255,.6)"/>
+          <!-- shine R -->
+          <circle cx="93" cy="46" r="2.5" fill="#fff"/>
+          <circle cx="89" cy="48" r="1.2" fill="rgba(255,255,255,.6)"/>
+
+          <!-- SNOUT -->
+          <ellipse cx="70" cy="68" rx="16" ry="12" fill="#F08080"/>
+          <circle cx="64" cy="69" r="4" fill="#C06080" id="nostrilL"/>
+          <circle cx="76" cy="69" r="4" fill="#C06080" id="nostrilR"/>
+
+          <!-- MOUTH - default slight smile -->
+          <path id="mouth" d="M60 79 Q70 86 80 79" stroke="#C06080" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+          <!-- EYEBROWS - expressive -->
+          <path id="browL" d="M41 33 Q52 27 60 33" stroke="#D07090" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path id="browR" d="M80 33 Q88 27 99 33" stroke="#D07090" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+          <!-- ribbon / bow -->
+          <path d="M50 88 L70 94 L90 88 L70 84 Z" fill="#E0366F"/>
+          <circle cx="70" cy="89" r="4" fill="#B52459"/>
+
+          <!-- feet -->
+          <ellipse cx="48" cy="132" rx="13" ry="9" fill="#F08080"/>
+          <ellipse cx="92" cy="132" rx="13" ry="9" fill="#F08080"/>
+          <!-- toe lines -->
+          <line x1="42" y1="135" x2="42" y2="139" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="48" y1="136" x2="48" y2="140" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="54" y1="135" x2="54" y2="139" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="86" y1="135" x2="86" y2="139" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="92" y1="136" x2="92" y2="140" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="98" y1="135" x2="98" y2="139" stroke="#D06070" stroke-width="1.5" stroke-linecap="round"/>
+
+          <!-- tail -->
+          <path d="M110 95 Q124 88 120 75 Q116 62 126 58" stroke="#F08080" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- bottom icons -->
+    <div class="bot-icons">
+      <div class="gic" onclick="show('tasks')">
+        <div class="ic" style="background:#FF6B35;">
+          📋
+          <div class="bd" id="task-badge">3</div>
+        </div>
+        <span>Nhiệm vụ</span>
+      </div>
+      <div class="gic">
+        <div class="ic" style="background:#E0366F;">🐷</div>
+        <span>Bạn bè</span>
+      </div>
+      <div class="gic">
+        <div class="ic" style="background:#6366F1;">👗</div>
+        <span>Trang phục</span>
+      </div>
+      <div class="gic" onclick="show('green')">
+        <div class="ic" style="background:#10B981;">🌿</div>
+        <span>Cây Xanh</span>
+      </div>
+    </div>
+  </div>
+
+  <button class="feed-btn" onclick="feedPig()">Cho heo ăn 🍎</button>
+
+  <div class="streak-bar" onclick="show('milestone')">
+    <span>🔥 Chuỗi 7 ngày — săn quà tuần này!</span>
+    <div class="streak-n">7</div>
+  </div>
+
+  <div class="bot-nav">
+    <div class="bn on">
+      <div class="bni">🐷</div>
+      <span>Heo Đất</span>
+    </div>
+    <div class="bn" onclick="show('tasks')">
+      <div class="bni">📋</div>
+      <span>Nhiệm vụ</span>
+    </div>
+    <div class="bn" onclick="show('green')">
+      <div class="bni">🌿</div>
+      <span>Cây Xanh</span>
+    </div>
+    <div class="bn" onclick="show('community')">
+      <div class="bni">👥</div>
+      <span>Cộng Đồng</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ TASKS ═══════════════════ -->
+<div class="screen" id="s-tasks">
+  <div class="sbar">
+    <button class="sbar-ico" onclick="show('main')" aria-label="Quay lại">←</button>
+    <span class="sbar-t">Nhiệm vụ hôm nay</span>
+    <span style="color:#fff;font-size:11px;font-weight:700;" id="task-count">0/3</span>
+  </div>
+
+  <div class="persona-strip">
+    <div class="persona-ico">🤝</div>
+    <div>
+      <div class="persona-name">Người kết nối</div>
+      <div class="persona-sub">Nhiệm vụ phù hợp với cách bạn dùng MoMo</div>
+    </div>
+    <button class="change-btn" onclick="toast('Đổi persona có sau 14 ngày!')">Đổi</button>
+  </div>
+
+  <div class="prog-wrap">
+    <div class="prog-label">
+      <span>Tiến độ hôm nay</span>
+      <span id="prog-txt">0 / 3 nhiệm vụ</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%;"></div></div>
+  </div>
+
+  <div class="task-bg">
+    <div class="sec-head">Nhiệm vụ chính — chọn ít nhất 1</div>
+
+    <div class="task-card" id="t1">
+      <div class="task-head">
+        <div class="task-ico">💸</div>
+        <div class="task-content">
+          <div class="task-title">Chuyển cà phê cho bạn hôm nay</div>
+          <div class="task-desc">Chuyển tiền cho 1 người bạn — dù nhỏ thôi. Heo của bạn sẽ được ăn thêm ngay!</div>
+          <div class="task-pills">
+            <span class="pill-gold">🪙 +80 Heo Vàng</span>
+            <span class="pill-xp">🌿 +12 XP</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-foot" id="t1-foot">
+        <button class="btn-main" onclick="completeTask('t1',80,12,'Chuyển tiền xong! Heo no rồi 🐷 +80 Heo Vàng')">Chuyển tiền ngay</button>
+        <button class="btn-skip" onclick="skipTask('t1')">Bỏ qua</button>
+      </div>
+    </div>
+
+    <div class="task-card" id="t2">
+      <div class="task-head">
+        <div class="task-ico">👥</div>
+        <div class="task-content">
+          <div class="task-title">Mời 1 bạn vào Sprout cùng</div>
+          <div class="task-desc">Gửi link mời — khi bạn bè vào, cả hai cùng nhận thưởng đặc biệt ngay!</div>
+          <div class="task-pills">
+            <span class="pill-gold">🪙 +120 Heo Vàng</span>
+            <span class="pill-xp">🌿 +20 XP</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-foot" id="t2-foot">
+        <button class="btn-main" onclick="completeTask('t2',120,20,'Link mời đã gửi! Heo đang vẫy tay chào bạn mới 👋')">Gửi lời mời</button>
+        <button class="btn-skip" onclick="skipTask('t2')">Bỏ qua</button>
+      </div>
+    </div>
+
+    <div class="sec-head">Bonus — làm thêm để lên cấp nhanh hơn</div>
+
+    <div class="task-card" id="t3">
+      <div class="task-head">
+        <div class="task-ico">📝</div>
+        <div class="task-content">
+          <div class="task-title">Quiz tài chính 1 câu hôm nay</div>
+          <div class="task-desc">30 giây — học 1 điều mới, heo được ăn thêm một chút.</div>
+          <div class="task-pills">
+            <span class="pill-gold">🪙 +50 Heo Vàng</span>
+            <span class="pill-xp">🌿 +8 XP</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-foot" id="t3-foot">
+        <button class="btn-main" onclick="show('quiz')">Làm quiz ngay</button>
+        <button class="btn-skip" onclick="skipTask('t3')">Bỏ qua</button>
+      </div>
+    </div>
+
+    <div class="all-done-banner" id="all-done">
+      <div class="adb-ico">🎉</div>
+      <div class="adb-t">Xong hết nhiệm vụ hôm nay!</div>
+      <div class="adb-s">Heo đang lớn nhanh lắm — quay lại ngày mai nhé!</div>
+    </div>
+  </div>
+
+  <div class="bot-nav">
+    <div class="bn" onclick="show('main')"><div class="bni">🐷</div><span>Heo Đất</span></div>
+    <div class="bn on"><div class="bni">📋</div><span>Nhiệm vụ</span></div>
+    <div class="bn" onclick="show('green')"><div class="bni">🌿</div><span>Cây Xanh</span></div>
+    <div class="bn" onclick="show('community')"><div class="bni">👥</div><span>Cộng Đồng</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ QUIZ ═══════════════════ -->
+<div class="screen" id="s-quiz">
+  <div class="sbar">
+    <button class="sbar-ico" onclick="show('tasks')" aria-label="Quay lại">←</button>
+    <span class="sbar-t">Câu hỏi hôm nay</span>
+    <span style="color:#fff;font-size:11px;font-weight:700;">+50 🪙</span>
+  </div>
+  <div class="quiz-bg">
+    <div class="q-top">
+      <div class="q-pig">🐷</div>
+      <div class="q-info">
+        <div class="q-title">Câu 1 / 1</div>
+        <div class="q-prog-track"><div class="q-prog-fill" id="qprog" style="width:0%;"></div></div>
+      </div>
+    </div>
+    <div class="q-card">
+      <div class="q-lbl">📚 Kiến thức tài chính</div>
+      <div class="q-text">Để tránh chi tiêu bốc đồng, phương pháp nào được khuyên dùng nhất?</div>
+    </div>
+    <div class="q-opts" id="qopts">
+      <div class="q-opt" onclick="pickQ(this,'wrong')">Mua ngay khi thấy thích</div>
+      <div class="q-opt" onclick="pickQ(this,'correct')">Quy tắc 24 giờ — chờ một ngày trước khi mua</div>
+      <div class="q-opt" onclick="pickQ(this,'wrong')">Chỉ mua khi được giảm trên 50%</div>
+    </div>
+    <div class="q-reward" id="qreward">
+      <span style="font-size:22px;">⭐</span>
+      <span id="qreward-txt"></span>
+    </div>
+    <button class="q-next" id="qnext" onclick="quizFinish()">Về nhiệm vụ ✓</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ MILESTONE ═══════════════════ -->
+<div class="screen" id="s-milestone">
+  <div class="sbar">
+    <button class="sbar-ico" onclick="show('main')" aria-label="Quay lại">←</button>
+    <span class="sbar-t">Milestone đạt được!</span>
+    <span></span>
+  </div>
+  <div class="ms-bg">
+    <div class="ms-confetti">🎊 🎉 🎊</div>
+    <div class="ms-title">Heo của bạn lên Cấp 5! 🎖️</div>
+    <div class="ms-pig">🐷✨</div>
+    <div class="ms-rewards">
+      <div class="ms-r-head">Phần thưởng của bạn</div>
+      <div class="ms-row"><div class="ms-row-ico">🪙</div><div class="ms-row-txt">Heo Vàng tích lũy</div><div class="ms-row-val">+500</div></div>
+      <div class="ms-row"><div class="ms-row-ico">🎫</div><div class="ms-row-txt">Voucher MoMo</div><div class="ms-row-val">20,000đ</div></div>
+      <div class="ms-row"><div class="ms-row-ico">👗</div><div class="ms-row-txt">Trang phục mới cho heo</div><div class="ms-row-val">Mở khóa</div></div>
+    </div>
+    <div class="ms-charity">🌱 500 Heo Vàng của bạn đã được quy đổi thành<br><strong>1 suất quà an sinh cho gia đình khó khăn</strong></div>
+    <button class="ms-share" onclick="toast('Đã chia sẻ lên Cộng Đồng MoMo! 🎉')">📤 Chia sẻ với bạn bè</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ GREEN / ĐI BỘ - ANT FOREST INSPIRED ═══════════════════ -->
+<div class="screen" id="s-green">
+  <div class="sbar">
+    <button class="sbar-ico" onclick="show('main')" aria-label="Quay lại">←</button>
+    <span class="sbar-t">Cây Xanh · Heo Xanh</span>
+    <span style="color:#fff;font-size:12px;font-weight:700;">🌱 240 năng lượng</span>
+  </div>
+
+  <div style="background:linear-gradient(180deg,#1B4332 0%,#2D6A4F 40%,#40916C 100%);flex:1;overflow-y:auto;padding:12px 14px 16px;display:flex;flex-direction:column;gap:12px;">
+
+    <!-- tree progress -->
+    <div style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:16px;padding:14px;text-align:center;">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cây xanh của bạn</div>
+      <div style="font-size:56px;line-height:1;margin-bottom:6px;" id="tree-display">🌱</div>
+      <div style="font-size:13px;font-weight:700;color:#95D5B2;" id="tree-stage">Mầm non — 240 / 500 năng lượng</div>
+      <div style="height:10px;background:rgba(255,255,255,.15);border-radius:5px;margin:8px 0;overflow:hidden;">
+        <div id="tree-bar" style="height:100%;background:linear-gradient(90deg,#52B788,#74C69D);border-radius:5px;width:48%;transition:width .5s cubic-bezier(.34,1.56,.64,1);"></div>
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,.5);">Khi đủ 500 → cây thật được trồng tại Việt Nam 🌳</div>
+    </div>
+
+    <!-- energy actions - Ant Forest style -->
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;">Thu năng lượng xanh hôm nay</div>
+
+    <div id="green-actions" style="display:flex;flex-direction:column;gap:8px;">
+
+      <div class="green-act-card" id="ga1" onclick="collectEnergy('ga1',80,'Đi xe đạp đến công ty')">
+        <div style="font-size:28px;">🚴</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#fff;">Đi xe đạp đến công ty</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px;">Kết nối GPS hoặc tự báo cáo</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:800;color:#74C69D;">+80</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);">năng lượng</div>
+        </div>
+      </div>
+
+      <div class="green-act-card" id="ga2" onclick="collectEnergy('ga2',50,'Đi bộ 30 phút')">
+        <div style="font-size:28px;">🚶</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#fff;">Đi bộ 30 phút</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px;">Tự động theo dõi qua điện thoại</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:800;color:#74C69D;">+50</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);">năng lượng</div>
+        </div>
+      </div>
+
+      <div class="green-act-card" id="ga3" onclick="collectEnergy('ga3',60,'Thanh toán không dùng tiền mặt')">
+        <div style="font-size:28px;">📱</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#fff;">Thanh toán không tiền mặt</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px;">Mỗi giao dịch MoMo = tiết kiệm giấy</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:800;color:#74C69D;">+60</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);">năng lượng</div>
+        </div>
+      </div>
+
+      <div class="green-act-card" id="ga4" onclick="collectEnergy('ga4',40,'Dùng túi tái sử dụng')">
+        <div style="font-size:28px;">♻️</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#fff;">Dùng túi tái sử dụng khi mua sắm</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.6);margin-top:2px;">Check-in tại cửa hàng đối tác</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:13px;font-weight:800;color:#74C69D;">+40</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);">năng lượng</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- steal mechanic - Ant Forest key hook -->
+    <div style="background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.15);border-radius:14px;padding:12px;">
+      <div style="font-size:11px;font-weight:700;color:#95D5B2;margin-bottom:8px;">⚡ Năng lượng bạn bè — thu trước khi hết!</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;">
+          <div style="font-size:20px;">👤</div>
+          <div style="flex:1;font-size:11px;color:#fff;font-weight:600;">Nguyễn Minh Tuấn</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);">còn 2 giờ</div>
+          <button onclick="stealEnergy(this,35)" style="background:#52B788;border:none;border-radius:10px;padding:5px 10px;font-size:10px;font-weight:700;color:#fff;cursor:pointer;">Thu +35</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;">
+          <div style="font-size:20px;">👤</div>
+          <div style="flex:1;font-size:11px;color:#fff;font-weight:600;">Trần Phương Linh</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);">còn 5 giờ</div>
+          <button onclick="stealEnergy(this,20)" style="background:#52B788;border:none;border-radius:10px;padding:5px 10px;font-size:10px;font-weight:700;color:#fff;cursor:pointer;">Thu +20</button>
+        </div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:8px;text-align:center;">Khi bạn không vào kịp, họ cũng có thể thu năng lượng của bạn!</div>
+    </div>
+
+    <!-- impact stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:22px;">🌳</div>
+        <div style="font-size:18px;font-weight:800;color:#95D5B2;" id="tree-count">0</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">cây đã trồng</div>
+      </div>
+      <div style="background:rgba(255,255,255,.08);border-radius:12px;padding:10px;text-align:center;">
+        <div style="font-size:22px;">👣</div>
+        <div style="font-size:18px;font-weight:800;color:#95D5B2;" id="step-count">2,450</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">bước chân hôm nay</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bot-nav">
+    <div class="bn" onclick="show('main')"><div class="bni">🐷</div><span>Heo Đất</span></div>
+    <div class="bn" onclick="show('tasks')"><div class="bni">📋</div><span>Nhiệm vụ</span></div>
+    <div class="bn on"><div class="bni">🌿</div><span>Cây Xanh</span></div>
+    <div class="bn" onclick="show('community')"><div class="bni">👥</div><span>Cộng Đồng</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ COMMUNITY ═══════════════════ -->
+<div class="screen" id="s-community">
+  <div class="sbar">
+    <button class="sbar-ico" onclick="show('main')" aria-label="Quay lại">←</button>
+    <span class="sbar-t">Cộng Đồng Sprout</span>
+    <span style="color:#fff;font-size:12px;font-weight:700;">1,284 người</span>
+  </div>
+
+  <div style="background:#F5F5FA;flex:1;overflow-y:auto;">
+
+    <!-- leaderboard -->
+    <div style="background:#fff;padding:12px 14px;border-bottom:1px solid #eee;">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">🏆 Bảng xếp hạng tuần này</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:10px;background:#FFF7E6;border-radius:10px;padding:8px 10px;border:1px solid #F59E0B;">
+          <div style="font-size:18px;">🥇</div>
+          <div style="font-size:22px;">👤</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Lê Thị Hoa</div>
+            <div style="font-size:10px;color:#888;">Cấp 8 · 1,240 Heo Vàng tuần này</div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#B45309;">1,240 🪙</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:#F5F5F5;border-radius:10px;padding:8px 10px;">
+          <div style="font-size:18px;">🥈</div>
+          <div style="font-size:22px;">👤</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Nguyễn Văn Nam</div>
+            <div style="font-size:10px;color:#888;">Cấp 6 · 980 Heo Vàng tuần này</div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#888;">980 🪙</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;background:#FCE8F0;border-radius:10px;padding:8px 10px;border:1.5px solid #E0366F;">
+          <div style="font-size:16px;">👤</div>
+          <div style="font-size:22px;">😊</div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#B52459;">Bạn — Phan Ngọc Linh</div>
+            <div style="font-size:10px;color:#888;">Cấp 3 · 460 Heo Vàng tuần này</div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#E0366F;">#7 · 460 🪙</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- friend feed -->
+    <div style="padding:10px 14px 4px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.8px;">📰 Bạn bè đang làm gì</div>
+
+    <div style="display:flex;flex-direction:column;gap:0;">
+
+      <div style="background:#fff;margin:0 0 1px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="font-size:28px;line-height:1;">🐷</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Minh Tuấn <span style="font-weight:400;color:#888;">lên Cấp 4</span></div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">Heo của Tuấn vừa được lên cấp 4 sau 14 ngày streak liên tục!</div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px;">2 giờ trước</div>
+        </div>
+        <button onclick="likePost(this)" style="background:#fff;border:1px solid #eee;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;color:#888;">❤️ 12</button>
+      </div>
+
+      <div style="background:#fff;margin:0 0 1px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="font-size:28px;line-height:1;">🌳</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Phương Linh <span style="font-weight:400;color:#888;">trồng được cây đầu tiên</span></div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">Cây số 1 tại rừng phòng hộ Cần Giờ, TP.HCM 🌱</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px;background:#EAF3DE;border-radius:8px;padding:5px 8px;">
+            <span style="font-size:14px;">🌳</span>
+            <span style="font-size:10px;color:#3B6D11;font-weight:600;">Cây thật đã được trồng tại Cần Giờ</span>
+          </div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px;">4 giờ trước</div>
+        </div>
+        <button onclick="likePost(this)" style="background:#fff;border:1px solid #eee;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;color:#888;">❤️ 28</button>
+      </div>
+
+      <div style="background:#fff;margin:0 0 1px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="font-size:28px;line-height:1;">💸</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Hoàng Anh <span style="font-weight:400;color:#888;">hoàn thành nhiệm vụ</span></div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">Chuyển tiền cho 3 bạn trong 1 ngày — streak mạnh quá!</div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px;">6 giờ trước</div>
+        </div>
+        <button onclick="likePost(this)" style="background:#fff;border:1px solid #eee;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;color:#888;">❤️ 7</button>
+      </div>
+
+      <div style="background:#fff;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <div style="font-size:28px;line-height:1;">🚴</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#1a1a2e;">Thu Hà <span style="font-weight:400;color:#888;">đi xe đạp đến công ty</span></div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">8.5km · tiết kiệm 1.2kg CO₂ hôm nay 🚴‍♀️</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:5px;">
+            <span style="background:#E1F5EE;border-radius:8px;padding:3px 8px;font-size:9px;font-weight:700;color:#0F6E56;">+80 🌿 năng lượng</span>
+          </div>
+          <div style="font-size:10px;color:#aaa;margin-top:4px;">8 giờ trước</div>
+        </div>
+        <button onclick="likePost(this)" style="background:#fff;border:1px solid #eee;border-radius:12px;padding:5px 10px;font-size:11px;cursor:pointer;color:#888;">❤️ 15</button>
+      </div>
+
+    </div>
+
+    <!-- invite friends CTA -->
+    <div style="margin:10px 14px 14px;background:linear-gradient(135deg,#FCE8F0,#FFF0F5);border:1.5px solid #F4C0D1;border-radius:14px;padding:14px;text-align:center;">
+      <div style="font-size:22px;margin-bottom:4px;">🤝</div>
+      <div style="font-size:13px;font-weight:700;color:#B52459;margin-bottom:4px;">Mời bạn bè vào Sprout</div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px;">Cả hai cùng nhận +200 Heo Vàng khi họ hoàn thành nhiệm vụ đầu tiên</div>
+      <button onclick="toast('Link mời đã được sao chép! 🎉')" style="background:#E0366F;color:#fff;border:none;border-radius:20px;padding:9px 24px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 #B52459;">Sao chép link mời</button>
+    </div>
+
+  </div>
+
+  <div class="bot-nav">
+    <div class="bn" onclick="show('main')"><div class="bni">🐷</div><span>Heo Đất</span></div>
+    <div class="bn" onclick="show('tasks')"><div class="bni">📋</div><span>Nhiệm vụ</span></div>
+    <div class="bn" onclick="show('green')"><div class="bni">🌿</div><span>Cây Xanh</span></div>
+    <div class="bn on"><div class="bni">👥</div><span>Cộng Đồng</span></div>
+  </div>
+</div>
+
+</div><!-- /phone -->
+
+<div class="caption">Nhấn vào tab để chuyển màn · Tap con heo nhiều lần để xem phản ứng</div>
+
+<script>
+/* ── SCREEN NAV ── */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  document.querySelectorAll('.np').forEach((p,i)=>{
+    p.classList.toggle('active',['main','tasks','green','community','milestone'][i]===id);
+  });
+  if(id==='quiz'){setTimeout(()=>{document.getElementById('qprog').style.width='0%';},100);}
+}
+
+/* ── TOAST ── */
+let toastT;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ── STATE ── */
+let gold=1240, xp=24, tapCount=0, isAnimating=false;
+
+function addGold(n){
+  gold+=n;
+  document.getElementById('gold-lbl').textContent=gold.toLocaleString('vi-VN');
+  document.getElementById('gold-bar').style.width=Math.min(50+Math.round((gold-1240)/30),100)+'%';
+}
+function addXP(n){
+  xp=Math.min(xp+n,50);
+  document.getElementById('xp-lbl').textContent=xp+'/50';
+  document.getElementById('xp-bar').style.width=Math.round(xp/50*100)+'%';
+}
+
+/* ── PIG EXPRESSIONS (Talking Tom style) ── */
+const expressions={
+  happy:{
+    mouth:'M58 79 Q70 90 82 79',
+    browL:'M41 30 Q52 23 60 29',
+    browR:'M80 29 Q88 23 99 30',
+    bubble:'Hehe! Vui quá đi 😄',
+    anim:'pig-happy'
+  },
+  love:{
+    mouth:'M58 79 Q70 90 82 79',
+    browL:'M41 30 Q52 23 60 29',
+    browR:'M80 29 Q88 23 99 30',
+    bubble:'Mình thích bạn lắm! ❤️',
+    anim:'pig-happy'
+  },
+  surprised:{
+    mouth:'M62 78 Q70 78 78 78',
+    browL:'M41 26 Q52 19 60 25',
+    browR:'M80 25 Q88 19 99 26',
+    bubble:'Ồ! Bất ngờ quá! 😲',
+    anim:'pig-wiggle'
+  },
+  eating:{
+    mouth:'M60 78 Q70 84 80 78',
+    browL:'M41 32 Q52 27 60 33',
+    browR:'M80 33 Q88 27 99 32',
+    bubble:'Ngon quá xá! Cho thêm đi 😋',
+    anim:'pig-eat'
+  },
+  excited:{
+    mouth:'M56 78 Q70 92 84 78',
+    browL:'M41 28 Q52 21 60 27',
+    browR:'M80 27 Q88 21 99 28',
+    bubble:'Hết nước chấm rồi! 🎉',
+    anim:'pig-happy'
+  },
+  shy:{
+    mouth:'M62 80 Q70 85 78 80',
+    browL:'M41 33 Q52 30 60 34',
+    browR:'M80 34 Q88 30 99 33',
+    bubble:'Ú òa! Bạn nhìn mình kìa 🙈',
+    anim:'pig-wiggle'
+  },
+  hungry:{
+    mouth:'M60 80 Q70 76 80 80',
+    browL:'M41 36 Q52 32 60 37',
+    browR:'M80 37 Q88 32 99 36',
+    bubble:'Mình đói quá! Cho mình ăn với 🥺',
+    anim:'pig-sad'
+  },
+};
+
+const tapSequence=['love','eating','surprised','excited','love','shy','eating','happy','excited','love'];
+
+function setExpression(name){
+  const e=expressions[name]||expressions.hungry;
+  document.getElementById('mouth').setAttribute('d',e.mouth);
+  document.getElementById('browL').setAttribute('d',e.browL);
+  document.getElementById('browR').setAttribute('d',e.browR);
+  document.getElementById('bubble').textContent=e.bubble;
+}
+
+function animPig(animClass){
+  if(isAnimating)return;
+  isAnimating=true;
+  const w=document.getElementById('pig-wrap');
+  w.classList.remove('pig-bounce');
+  w.classList.add(animClass);
+  setTimeout(()=>{
+    w.classList.remove(animClass);
+    w.classList.add('pig-bounce');
+    isAnimating=false;
+  },600);
+}
+
+function popHearts(){
+  const h=document.getElementById('hearts');
+  h.style.opacity='';
+  h.classList.remove('pop');
+  void h.offsetWidth;
+  h.classList.add('pop');
+}
+function popStars(){
+  const s=document.getElementById('stars');
+  s.classList.remove('pop');
+  void s.offsetWidth;
+  s.classList.add('pop');
+}
+
+function tapPig(e){
+  const exp=tapSequence[tapCount%tapSequence.length];
+  tapCount++;
+  setExpression(exp);
+  animPig(expressions[exp]?.anim||'pig-wiggle');
+  if(exp==='love'||exp==='excited')popHearts();
+  if(exp==='happy'||exp==='eating')popStars();
+  addGold(5); addXP(1);
+}
+
+/* ── FEED PIG ── */
+const feedSpeeches=[
+  'Ngon quá! Cho thêm đi 😋','Ăn no rồi! Mình lớn thêm rồi ✨','Hehe cảm ơn bạn! 🥰','Tiếp! Tiếp! 🍎','Bạn tốt bụng quá! ❤️','Heo Vàng tăng rồi nè! 🪙'
+];
+let feedIdx=0;
+function feedPig(){
+  setExpression('eating');
+  animPig('pig-eat');
+  popStars();
+  document.getElementById('bubble').textContent=feedSpeeches[feedIdx%feedSpeeches.length];
+  feedIdx++;
+  addGold(15); addXP(3);
+  toast('+15 Heo Vàng! Heo đang ăn 🍎');
+}
+
+/* ── TASKS ── */
+let doneTasks=new Set();
+function completeTask(id,g,xp2,msg){
+  if(doneTasks.has(id))return;
+  doneTasks.add(id);
+  const card=document.getElementById(id);
+  card.classList.add('done');
+  document.getElementById(id+'-foot').innerHTML=
+    '<div class="done-row"><span style="font-size:20px">✅</span><span>Hoàn thành! +'+g+' Heo Vàng</span></div>';
+  addGold(g); addXP(xp2);
+  updateProg();
+  toast(msg);
+  setExpression('happy');
+}
+function skipTask(id){
+  if(doneTasks.has(id)||doneTasks.has('s'+id))return;
+  doneTasks.add('s'+id);
+  const card=document.getElementById(id);
+  card.classList.add('skipped');
+  document.getElementById(id+'-foot').innerHTML=
+    '<div class="done-row"><span style="color:#aaa;font-size:11px">Bỏ qua — nhiệm vụ mới ngày mai!</span></div>';
+  updateProg();
+  toast('Đã bỏ qua. Hẹn ngày mai nhé! 👋');
+}
+function updateProg(){
+  const real=[...doneTasks].filter(x=>!x.startsWith('s')).length;
+  const total=3;
+  const pct=Math.min(Math.round(real/total*100),100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-txt').textContent=real+' / '+total+' nhiệm vụ';
+  document.getElementById('task-count').textContent=real+'/'+total;
+  const badge=document.getElementById('task-badge');
+  badge.textContent=Math.max(total-real,0);
+  if(real>=total){
+    badge.style.background='#10B981';
+    document.getElementById('all-done').style.display='block';
+    setExpression('excited');
+  }
+}
+
+/* ── QUIZ ── */
+let quizDone=false;
+function pickQ(el,result){
+  if(quizDone)return;
+  quizDone=true;
+  document.getElementById('qprog').style.width='100%';
+  document.querySelectorAll('.q-opt').forEach(o=>{o.style.pointerEvents='none';o.style.opacity='.4';});
+  el.style.opacity='1';
+  const r=document.getElementById('qreward');
+  const rt=document.getElementById('qreward-txt');
+  r.style.display='flex';
+  if(result==='correct'){
+    el.classList.add('correct');
+    rt.textContent='Chính xác! Heo vừa no thêm một chút +50 Heo Vàng ⭐';
+  } else {
+    el.classList.add('wrong');
+    r.style.borderColor='#F59E0B'; r.style.background='rgba(245,158,11,.12)';
+    rt.style.color='#F59E0B';
+    rt.textContent='Chưa đúng! Đáp án: Quy tắc 24 giờ. Thử lại ngày mai!';
+  }
+  document.getElementById('qnext').style.display='block';
+}
+function quizFinish(){
+  completeTask('t3',50,8,'Quiz xong! +50 Heo Vàng 📝');
+  show('tasks');
+}
+
+/* ── GREEN SCREEN ── */
+let greenEnergy=240, treesDone=0;
+const treeStages=[
+  {min:0,  max:100, icon:'🌱', label:'Hạt giống'},
+  {min:100,max:300, icon:'🌿', label:'Mầm non'},
+  {min:300,max:500, icon:'🌲', label:'Cây con'},
+  {min:500,max:999, icon:'🌳', label:'Cây trưởng thành — đã trồng thật!'},
+];
+function updateTree(){
+  const pct=Math.min(Math.round(greenEnergy/500*100),100);
+  document.getElementById('tree-bar').style.width=pct+'%';
+  const stage=treeStages.find(s=>greenEnergy>=s.min&&greenEnergy<s.max)||treeStages[3];
+  document.getElementById('tree-display').textContent=stage.icon;
+  document.getElementById('tree-stage').textContent=stage.label+' — '+Math.min(greenEnergy,500)+' / 500 năng lượng';
+  document.getElementById('tree-count').textContent=treesDone;
+  if(greenEnergy>=500&&treesDone===0){
+    treesDone=1;
+    document.getElementById('tree-count').textContent='1';
+    setTimeout(()=>{
+      toast('🌳 Cây thật của bạn đã được trồng tại Cần Giờ!');
+      greenEnergy=0; updateTree();
+    },800);
+  }
+}
+function collectEnergy(id,amount,label){
+  const card=document.getElementById(id);
+  if(card.classList.contains('done'))return;
+  card.classList.add('done');
+  card.innerHTML=card.innerHTML+'<div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:#52B788;font-weight:700;">✓ Thu xong</div>';
+  greenEnergy+=amount;
+  addGold(Math.round(amount/2));
+  updateTree();
+  toast('+'+amount+' năng lượng xanh! 🌿 '+label);
+}
+function stealEnergy(btn,amount){
+  btn.textContent='Thu xong ✓';
+  btn.style.background='#2D6A4F';
+  btn.onclick=null;
+  greenEnergy+=amount;
+  updateTree();
+  toast('+'+amount+' năng lượng thu từ bạn bè! ⚡');
+}
+
+/* ── COMMUNITY ── */
+function likePost(btn){
+  const cur=parseInt(btn.textContent.replace(/[^0-9]/g,''));
+  btn.textContent='❤️ '+(cur+1);
+  btn.style.background='#FCE8F0';
+  btn.style.borderColor='#F4C0D1';
+  btn.style.color='#E0366F';
+  btn.onclick=null;
+}
+
+/* init */
+setExpression('hungry');
+updateTree();
+</script>
+</body>
+</html>
